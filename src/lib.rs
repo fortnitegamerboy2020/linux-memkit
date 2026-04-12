@@ -171,90 +171,47 @@ pub fn read_bytes(target_process: &a_process, target_address: u64, size: usize) 
     }
     return vec![]; // return a empty byte array
 }
-pub fn read_u64(target_process: &a_process, target_address: u64) -> u64
+pub fn read<T: Copy>(target_process: &a_process, target_address: u64) -> Option<T>
 {
-    if DELAYED_READS_ENABLED.load(Ordering::Relaxed) // if delayed reading is on
-	{
-        // sleep a random amount of miliseconds from the delayed read minimuim and maximum
-		sleep(std::time::Duration::from_millis(random(DELAYED_READ_MIN.load(Ordering::Relaxed), DELAYED_READ_MAX.load(Ordering::Relaxed)) as u64));
-	}
-    let buffer: Vec<u8> = read_bytes(target_process, // read the bytes and get the buffer with the target process
-        target_address, // target address (u64)
-        std::mem::size_of::<u64>() // the size of a u64
-    ); 
-    if buffer.len() < std::mem::size_of::<u64>() // if the amount of bytes in buffer is below
+    // read however many bytes of the type they want to read with
+    let read_bytes = read_bytes(target_process, target_address, std::mem::size_of::<T>()); 
+    // this might be changed to return partial reads aswell
+    if read_bytes.len() != std::mem::size_of::<T>() // if we didnt read the right amount of bytes
     {
-        return 0x0; // return nothing
+        return None; // return none
     }
-    let read: u64 = u64::from_ne_bytes(buffer.try_into().unwrap()); // convert the byte array to u64
-    return read // return the actual read
-}
-pub fn read_u32(target_process: &a_process, target_address: u64) -> u32
-{
-    if DELAYED_READS_ENABLED.load(Ordering::Relaxed) // if delayed reading is on
-	{
-		sleep(std::time::Duration::from_millis(random(DELAYED_READ_MIN.load(Ordering::Relaxed), DELAYED_READ_MAX.load(Ordering::Relaxed)) as u64));
-	}
-    let buffer: Vec<u8> = read_bytes(target_process, // read the bytes and get the buffer with the target process
-        target_address, // target address (u64)
-        std::mem::size_of::<u32>() // the size of a u32
-    ); 
-    if buffer.len() < std::mem::size_of::<u32>() // if the amount of bytes in buffer is below
-    {
-        return 0x0; // return nothing
-    }
-    let read: u32 = u32::from_ne_bytes(buffer.try_into().unwrap()); // convert the byte array to u32
-    return read // return the actual read
-}
-pub fn read_u16(target_process: &a_process, target_address: u64) -> u16 
-{
-    if DELAYED_READS_ENABLED.load(Ordering::Relaxed) // if delayed reading is on
-	{
-		sleep(std::time::Duration::from_millis(random(DELAYED_READ_MIN.load(Ordering::Relaxed), DELAYED_READ_MAX.load(Ordering::Relaxed)) as u64));
-	}
-    let buffer: Vec<u8> = read_bytes(target_process, // read the bytes and get the buffer with the target process
-        target_address, // target address (u64)
-        std::mem::size_of::<u16>() // the size of a u16
-    ); 
-    if buffer.len() < std::mem::size_of::<u16>() // if the amount of bytes in buffer is below
-    {
-        return 0x0; // return nothing
-    }
-    let read: u16 = u16::from_ne_bytes(buffer.try_into().unwrap()); // convert the byte array to u16
-    return read // return the actual read
-}
-pub fn read_u8(target_process: &a_process, target_address: u64) -> u8
-{
-    if DELAYED_READS_ENABLED.load(Ordering::Relaxed) // if delayed reading is on
-	{
-		sleep(std::time::Duration::from_millis(random(DELAYED_READ_MIN.load(Ordering::Relaxed), DELAYED_READ_MAX.load(Ordering::Relaxed)) as u64));
-	}
-    let buffer: Vec<u8> = read_bytes(target_process, // read the bytes and get the buffer with the target process
-        target_address, // target address (u64)
-        std::mem::size_of::<u8>() // the size of a u8
-    ); 
-    if buffer.len() < std::mem::size_of::<u8>() // if the amount of bytes in buffer is below
-    {
-        return 0x0; // return nothing
-    }
-    let read: u8 = u8::from_ne_bytes(buffer.try_into().unwrap()); // convert the byte array to u8
-    return read // return the actual read
-}
-pub fn read_usize(target_process: &a_process, target_address: u64) -> usize
-{
-    if DELAYED_READS_ENABLED.load(Ordering::Relaxed) // if delayed reading is on
-	{
-		sleep(std::time::Duration::from_millis(random(DELAYED_READ_MIN.load(Ordering::Relaxed), DELAYED_READ_MAX.load(Ordering::Relaxed)) as u64));
-	}
-    let buffer: Vec<u8> = read_bytes(target_process, // read the bytes and get the buffer with the target process
-        target_address, // target address (u64)
-        std::mem::size_of::<usize>() // the size of a usize
-    ); 
-    if buffer.len() < std::mem::size_of::<usize>() // if the amount of bytes in buffer is below
-    {
-        return 0x0; // return nothing
-    }
-    let read: usize = usize::from_ne_bytes(buffer.try_into().unwrap()); // convert the byte array to usize
-    return read // return the actual read
+    return Some(unsafe { 
+        *(read_bytes.as_ptr() as *const T) // convert read_bytes a very unsafe way (why its in an unsafe block)
+    }); // return the read bytes as whatever type they want to read with
 }
 
+// these are kept for backwards compatability and for those who just want to use this for simplicity
+
+pub fn read_f64(target_process: &a_process, target_address: u64) -> f64 // wrapper
+{
+    return read::<f64>(target_process, target_address).unwrap_or(0.0); // use read with the type and return the read or if it fails then 0.0 for float
+}
+pub fn read_f32(target_process: &a_process, target_address: u64) -> f32 // wrapper
+{
+    return read::<f32>(target_process, target_address).unwrap_or(0.0); // use read with the type and return the read or if it fails then 0.0 for float
+}
+pub fn read_u64(target_process: &a_process, target_address: u64) -> u64 // wrapper
+{
+    return read::<u64>(target_process, target_address).unwrap_or(0); // use read with the type and return the read or if it fails then 0
+}
+pub fn read_u32(target_process: &a_process, target_address: u64) -> u32 // wrapper
+{
+    return read::<u32>(target_process, target_address).unwrap_or(0); // use read with the type and return the read or if it fails then 0
+}
+pub fn read_u16(target_process: &a_process, target_address: u64) -> u16 // wrapper
+{
+    return read::<u16>(target_process, target_address).unwrap_or(0); // use read with the type and return the read or if it fails then 0
+}
+pub fn read_u8(target_process: &a_process, target_address: u64) -> u8 // wrapper
+{
+    return read::<u8>(target_process, target_address).unwrap_or(0); // use read with the type and return the read or if it fails then 0
+}
+pub fn read_usize(target_process: &a_process, target_address: u64) -> usize // wrapper
+{
+    return read::<usize>(target_process, target_address).unwrap_or(0); // use read with the type and return the read or if it fails then 0
+}
