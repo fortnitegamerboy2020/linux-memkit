@@ -7,7 +7,7 @@ use rand::{RngExt};
 static DELAYED_READS_ENABLED: AtomicBool = AtomicBool::new(false);
 static DELAYED_READ_MIN: AtomicUsize = AtomicUsize::new(5);
 static DELAYED_READ_MAX: AtomicUsize = AtomicUsize::new(20);
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MemError {
     Unsupported,
     InvalidProcess,
@@ -16,7 +16,7 @@ pub enum MemError {
     InvalidSize,
     InvalidBuffer,
     ReadFailure,
-    Syscall(std::io::Error),
+    Syscall(i32),
     PartialRead {
         expected: usize,
         actual: usize,
@@ -26,7 +26,7 @@ pub enum MemError {
         actual: usize,
     },
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ProcError {
     InvalidProcess,
     InvalidPath,
@@ -35,7 +35,7 @@ pub enum ProcError {
     ProcessNotFound,
     
 }
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum MapError {
     InvalidProcess,
     InvalidMaps,
@@ -305,7 +305,9 @@ pub fn read_bytes(target_process: &a_process, target_address: usize, size: usize
             return Err(MemError::PartialRead { expected: size, actual: result_read as usize });
         }
     } else {
-        return Err(MemError::Syscall(std::io::Error::last_os_error())) // return a empty byte array
+        return Err(
+            MemError::Syscall(match std::io::Error::last_os_error().raw_os_error() { Some(e) => e, None => 935 })
+        ) // return a empty byte array
 
     }
 }
@@ -332,7 +334,7 @@ pub fn write_bytes(target_process: &a_process, target_address: usize, buffer: &[
         process_vm_writev(target_process.process_id as i32, &local_iov, 1, &remote_iov, 1, 0)
     };
     if result_write < 0 {
-        return Err(MemError::Syscall(std::io::Error::last_os_error()));
+        return Err(MemError::Syscall(match std::io::Error::last_os_error().raw_os_error() { Some(e) => e, None => 935 }));
     }
     let actual = result_write as usize;
     if actual != buffer.len() {
