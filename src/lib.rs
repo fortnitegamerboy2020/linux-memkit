@@ -7,12 +7,12 @@ use rand::{RngExt};
 static DELAYED_READS_ENABLED: AtomicBool = AtomicBool::new(false);
 static DELAYED_READ_MIN: AtomicUsize = AtomicUsize::new(5);
 static DELAYED_READ_MAX: AtomicUsize = AtomicUsize::new(20);
-
 #[derive(Debug)]
 pub enum MemError {
     Unsupported,
     InvalidProcess,
     InvalidAddress,
+    InvalidMap,
     InvalidSize,
     InvalidBuffer,
     ReadFailure,

@@ -1,16 +1,14 @@
 [package]
-name = "ania_memory"
-version = "2.0.0"
+name = "linux-memkit"
+version = "1.0.3"
 edition = "2024"
 description = "Pretty basic memory library for linux using procfs & libc with toggleable random delay between reads. Still in testing, if you have issues, contact me on discord: mwmwmwmwmwwwmwmwmwmw"
 license = "MIT OR Apache-2.0"
 include = [
-    "src/**/*.rs",
+    "src/**/lib.rs",
     "Cargo.toml",
     "README.md",
     "LICENSE*",
-    "examples/**/*",
-    "benches/**/*",   # remove if you don't want benchmarks published
 ]
 
 [dependencies]
